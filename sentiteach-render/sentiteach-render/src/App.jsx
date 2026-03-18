@@ -181,11 +181,16 @@ export default function App() {
         body: JSON.stringify({ messages: newHistory, system: SYSTEM_PROMPT }),
       });
       const data = await res.json();
-      const reply = data.reply || "Sorry, I couldn't get a response.";
-      setHistory(h => [...h, { role:"assistant", content: reply }]);
-      setMessages(prev => [...prev, { role:"assistant", parts: formatMessage(reply) }]);
-    } catch {
-      setMessages(prev => [...prev, { role:"assistant", parts:[{ type:"text", content:"Connection error. Please try again." }] }]);
+      if (!res.ok || data.error) {
+        const errMsg = `API Error ${res.status}: ${data.error || data.type || "Unknown error"}`;
+        setMessages(prev => [...prev, { role:"assistant", parts:[{ type:"text", content: errMsg }] }]);
+      } else {
+        const reply = data.reply || "No response received.";
+        setHistory(h => [...h, { role:"assistant", content: reply }]);
+        setMessages(prev => [...prev, { role:"assistant", parts: formatMessage(reply) }]);
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, { role:"assistant", parts:[{ type:"text", content:"Network error: " + err.message }] }]);
     }
     setLoading(false);
   }
